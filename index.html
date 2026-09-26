@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShortLink — Shorten any link</title>
+  <meta name="description" content="Paste a long link and get a short one you can share anywhere. Free, fast, no sign-up.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234f46e5'/><path d='M13.5 18.5l5-5M12 15l-2 2a3.5 3.5 0 005 5l2-2M20 17l2-2a3.5 3.5 0 00-5-5l-2 2' stroke='white' stroke-width='2.2' fill='none' stroke-linecap='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-soft: #eef2ff;
+      --success: #059669;
+      --error: #dc2626;
+      --shadow: 0 1px 2px rgba(15,23,42,.04), 0 12px 32px -8px rgba(15,23,42,.10);
+      --glow: radial-gradient(60% 50% at 50% 0%, rgba(79,70,229,.14), transparent 70%);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b0d14;
+        --surface: #141724;
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+        --border: #262b3d;
+        --accent: #818cf8;
+        --accent-hover: #a5b4fc;
+        --accent-soft: #1e2140;
+        --success: #34d399;
+        --error: #f87171;
+        --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -8px rgba(0,0,0,.5);
+        --glow: radial-gradient(60% 50% at 50% 0%, rgba(129,140,248,.18), transparent 70%);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--glow), var(--bg);
+      background-repeat: no-repeat;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+    header svg { width: 28px; height: 28px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px 64px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(32px, 6vw, 52px);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      font-weight: 700;
+      text-align: center;
+      text-wrap: balance;
+    }
+    h1 span { color: var(--accent); }
+    .lede {
+      margin: 0 0 36px;
+      color: var(--muted);
+      font-size: 18px;
+      text-align: center;
+      max-width: 520px;
+      text-wrap: pretty;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 680px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+    }
+
+    form {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .field {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+    .field svg {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    input[type="url"] {
+      width: 100%;
+      height: 56px;
+      padding: 0 16px 0 46px;
+      font: inherit;
+      font-size: 16px;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    input[type="url"]::placeholder { color: var(--muted); opacity: .8; }
+    input[type="url"]:focus { background: var(--accent-soft); }
+    .card.has-error input[type="url"] { border-color: var(--error); }
+
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: 0;
+      border-radius: 12px;
+      transition: background .15s, transform .05s, opacity .15s;
+    }
+    button:active { transform: scale(.98); }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .primary {
+      height: 56px;
+      padding: 0 28px;
+      font-weight: 600;
+      font-size: 16px;
+      color: #fff;
+      background: var(--accent);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 140px;
+    }
+    @media (prefers-color-scheme: dark) { .primary { color: #0b0d14; } }
+    .primary:hover { background: var(--accent-hover); }
+    .primary[disabled] { opacity: .7; cursor: progress; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .label { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .message {
+      min-height: 22px;
+      margin: 10px 4px 0;
+      font-size: 14px;
+      color: var(--error);
+      text-align: center;
+    }
+
+    .result {
+      display: none;
+      margin-top: 4px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      align-items: center;
+      gap: 12px;
+      animation: rise .25s ease-out;
+    }
+    .result.show { display: flex; }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .result-text { flex: 1; min-width: 0; }
+    .short {
+      display: block;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .short:hover { text-decoration: underline; }
+    .original {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .copy {
+      height: 44px;
+      padding: 0 18px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .copy.copied { color: var(--success); }
+    .copy svg { width: 18px; height: 18px; }
+
+    .recent {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 28px;
+    }
+    .recent h2 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+      margin: 0 0 10px 4px;
+    }
+    .recent ul { list-style: none; margin: 0; padding: 0; }
+    .recent li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .recent li:hover { background: var(--surface); }
+    .recent .r-short { color: var(--text); font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .recent .r-long { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .recent button { background: none; color: var(--muted); padding: 4px 8px; font-size: 13px; font-weight: 500; }
+    .recent button:hover { color: var(--accent); }
+
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px 24px;
+      margin-top: 40px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .features span { display: inline-flex; align-items: center; gap: 6px; }
+    .features svg { width: 16px; height: 16px; color: var(--success); }
+
+    footer {
+      padding: 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a { color: inherit; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    @media (max-width: 560px) {
+      form { flex-direction: column; }
+      .primary { width: 100%; }
+      .result { flex-direction: column; align-items: stretch; text-align: center; }
+      .copy { justify-content: center; }
+      .lede { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M13.5 18.5l5-5M12 15l-2 2a3.5 3.5 0 005 5l2-2M20 17l2-2a3.5 3.5 0 00-5-5l-2 2" stroke="var(--surface)" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>
+    ShortLink
+  </header>
+
+  <main>
+    <h1>Paste a long link.<br><span>Get a short one.</span></h1>
+    <p class="lede">Turn messy URLs into clean links you can share anywhere. Free, instant, no sign-up.</p>
+
+    <div class="card" id="card">
+      <form id="form" novalidate>
+        <div class="field">
+          <label for="url" class="sr-only">Long URL</label>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+          <input id="url" type="url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false"
+                 placeholder="Paste your long link here…" autofocus required>
+        </div>
+        <button class="primary" id="submit" type="submit">
+          <span class="label">Shorten</span>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <div class="result" id="result" aria-live="polite">
+        <div class="result-text">
+          <a class="short" id="short" href="#" target="_blank" rel="noopener"></a>
+          <span class="original" id="original"></span>
+        </div>
+        <button class="copy" id="copy" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          <span>Copy</span>
+        </button>
+      </div>
+    </div>
+    <p class="message" id="message" role="alert"></p>
+
+    <section class="recent" id="recent" hidden>
+      <h2>Recent links</h2>
+      <ul id="recent-list"></ul>
+    </section>
+
+    <div class="features">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Free forever</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>No account needed</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Links never expire</span>
+    </div>
+  </main>
+
+  <footer>Short links powered by <a href="https://is.gd" target="_blank" rel="noopener">is.gd</a></footer>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const form = $("form"), input = $("url"), submit = $("submit"), card = $("card");
+    const result = $("result"), shortEl = $("short"), originalEl = $("original");
+    const copyBtn = $("copy"), message = $("message");
+    const recentBox = $("recent"), recentList = $("recent-list");
+    const STORE_KEY = "shortlink.recent";
+
+    function normalize(raw) {
+      let value = raw.trim();
+      if (!value) return null;
+      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = "https://" + value;
+      try {
+        const u = new URL(value);
+        if (!/^https?:$/.test(u.protocol) || !u.hostname.includes(".")) return null;
+        return u.href;
+      } catch { return null; }
+    }
+
+    // is.gd supports JSONP, so this works from a static page with no backend.
+    function shorten(longUrl) {
+      return new Promise((resolve, reject) => {
+        const cb = "__isgd_" + Math.random().toString(36).slice(2);
+        const script = document.createElement("script");
+        const timer = setTimeout(() => done(new Error("The service took too long to respond. Please try again.")), 10000);
+        function done(err, data) {
+          clearTimeout(timer);
+          delete window[cb];
+          script.remove();
+          err ? reject(err) : resolve(data);
+        }
+        window[cb] = (data) => {
+          if (data && data.shorturl) done(null, data.shorturl);
+          else done(new Error((data && data.errormessage) || "Couldn't shorten that link."));
+        };
+        script.onerror = () => done(new Error("Couldn't reach the shortening service. Check your connection."));
+        script.src = "https://is.gd/create.php?format=json&callback=" + cb + "&url=" + encodeURIComponent(longUrl);
+        document.head.appendChild(script);
+      });
+    }
+
+    function setError(text) {
+      message.textContent = text || "";
+      card.classList.toggle("has-error", !!text);
+    }
+
+    function setLoading(on) {
+      submit.disabled = on;
+      submit.classList.toggle("loading", on);
+    }
+
+    function showResult(shortUrl, longUrl) {
+      shortEl.textContent = shortUrl.replace(/^https?:\/\//, "");
+      shortEl.href = shortUrl;
+      originalEl.textContent = longUrl;
+      originalEl.title = longUrl;
+      result.classList.add("show");
+      resetCopy();
+      copyBtn.focus();
+    }
+
+    async function copyText(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); ta.remove();
+      }
+      if (btn) {
+        btn.classList.add("copied");
+        btn.querySelector("span").textContent = "Copied!";
+        setTimeout(() => resetCopy(btn), 2000);
+      }
+    }
+    function resetCopy(btn = copyBtn) {
+      btn.classList.remove("copied");
+      btn.querySelector("span").textContent = "Copy";
+    }
+
+    function loadRecent() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; }
+    }
+    function saveRecent(item) {
+      const list = [item, ...loadRecent().filter((r) => r.long !== item.long)].slice(0, 5);
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch {}
+      renderRecent();
+    }
+    function renderRecent() {
+      const list = loadRecent();
+      recentBox.hidden = list.length === 0;
+      recentList.replaceChildren(...list.map((r) => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.className = "r-short"; a.href = r.short; a.target = "_blank"; a.rel = "noopener";
+        a.textContent = r.short.replace(/^https?:\/\//, "");
+        const long = document.createElement("span");
+        long.className = "r-long"; long.textContent = r.long; long.title = r.long;
+        const btn = document.createElement("button");
+        btn.type = "button"; btn.innerHTML = "<span>Copy</span>";
+        btn.onclick = () => copyText(r.short, btn);
+        li.append(a, long, btn);
+        return li;
+      }));
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError("");
+      const longUrl = normalize(input.value);
+      if (!longUrl) {
+        setError(input.value.trim() ? "That doesn't look like a valid link. Try something like https://example.com/page" : "Paste a link first.");
+        input.focus();
+        return;
+      }
+      setLoading(true);
+      try {
+        const shortUrl = await shorten(longUrl);
+        showResult(shortUrl, longUrl);
+        saveRecent({ short: shortUrl, long: longUrl });
+        input.value = "";
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    input.addEventListener("input", () => setError(""));
+    copyBtn.addEventListener("click", () => copyText(shortEl.href, copyBtn));
+    renderRecent();
+  </script>
+</body>
+</html>
