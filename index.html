@@ -350,7 +350,7 @@
     </div>
   </main>
 
-  <footer>Created by <strong>Jetmir Troshani</strong> · Short links powered by is.gd, v.gd &amp; TinyURL</footer>
+  <footer>Created by <strong>Jetmir Troshani</strong> · Short links powered by da.gd &amp; spoo.me</footer>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -371,25 +371,42 @@
       } catch { return null; }
     }
 
-    // Free public shorteners, tried in order. is.gd / v.gd support JSONP,
-    // so this works from a static page with no backend.
+    // Free public shorteners that allow browser (CORS/JSONP) requests, tried in
+    // order, so this works from a static page with no backend.
     async function shorten(longUrl) {
-      let lastError;
       for (const provider of [
+        () => shortenDagd(longUrl),
+        () => shortenSpoo(longUrl),
         () => shortenJsonp("is.gd", longUrl),
-        () => shortenJsonp("v.gd", longUrl),
-        () => shortenTinyUrl(longUrl),
       ]) {
-        try { return await provider(); } catch (err) { lastError = err; }
+        try { return await provider(); } catch {}
       }
-      throw lastError;
+      throw new Error("Couldn't shorten that link right now. Please try again in a moment.");
     }
 
-    async function shortenTinyUrl(longUrl) {
-      const res = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(longUrl));
+    async function fetchWithTimeout(url, options = {}) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try { return await fetch(url, { ...options, signal: ctrl.signal }); }
+      finally { clearTimeout(timer); }
+    }
+
+    async function shortenDagd(longUrl) {
+      const res = await fetchWithTimeout("https://da.gd/s?url=" + encodeURIComponent(longUrl));
       const text = (await res.text()).trim();
-      if (!res.ok || !/^https?:\/\//.test(text)) throw new Error("Couldn't shorten that link. Please try again.");
+      if (!res.ok || !/^https:\/\/da\.gd\/\S+$/.test(text)) throw new Error("da.gd failed");
       return text;
+    }
+
+    async function shortenSpoo(longUrl) {
+      const res = await fetchWithTimeout("https://spoo.me/", {
+        method: "POST",
+        headers: { "Accept": "application/json" },
+        body: new URLSearchParams({ url: longUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.short_url) throw new Error("spoo.me failed");
+      return data.short_url.replace(/^http:/, "https:");
     }
 
     function shortenJsonp(host, longUrl) {
