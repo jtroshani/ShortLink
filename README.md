@@ -7,3 +7,5 @@ A clean, single-page URL shortener. Paste a long link, click **Shorten**, copy t
 - Light/dark mode, mobile-friendly, recent links saved in your browser
 
 Open `index.html` in a browser to use it.
+
+Created by Jetmir Troshani.
