@@ -350,7 +350,7 @@
     </div>
   </main>
 
-  <footer>Short links powered by <a href="https://is.gd" target="_blank" rel="noopener">is.gd</a></footer>
+  <footer>Short links powered by free public shorteners (is.gd, v.gd, TinyURL)</footer>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -371,12 +371,32 @@
       } catch { return null; }
     }
 
-    // is.gd supports JSONP, so this works from a static page with no backend.
-    function shorten(longUrl) {
+    // Free public shorteners, tried in order. is.gd / v.gd support JSONP,
+    // so this works from a static page with no backend.
+    async function shorten(longUrl) {
+      let lastError;
+      for (const provider of [
+        () => shortenJsonp("is.gd", longUrl),
+        () => shortenJsonp("v.gd", longUrl),
+        () => shortenTinyUrl(longUrl),
+      ]) {
+        try { return await provider(); } catch (err) { lastError = err; }
+      }
+      throw lastError;
+    }
+
+    async function shortenTinyUrl(longUrl) {
+      const res = await fetch("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(longUrl));
+      const text = (await res.text()).trim();
+      if (!res.ok || !/^https?:\/\//.test(text)) throw new Error("Couldn't shorten that link. Please try again.");
+      return text;
+    }
+
+    function shortenJsonp(host, longUrl) {
       return new Promise((resolve, reject) => {
         const cb = "__isgd_" + Math.random().toString(36).slice(2);
         const script = document.createElement("script");
-        const timer = setTimeout(() => done(new Error("The service took too long to respond. Please try again.")), 10000);
+        const timer = setTimeout(() => done(new Error("The service took too long to respond. Please try again.")), 8000);
         function done(err, data) {
           clearTimeout(timer);
           delete window[cb];
@@ -388,7 +408,7 @@
           else done(new Error((data && data.errormessage) || "Couldn't shorten that link."));
         };
         script.onerror = () => done(new Error("Couldn't reach the shortening service. Check your connection."));
-        script.src = "https://is.gd/create.php?format=json&callback=" + cb + "&url=" + encodeURIComponent(longUrl);
+        script.src = "https://" + host + "/create.php?format=json&callback=" + cb + "&url=" + encodeURIComponent(longUrl);
         document.head.appendChild(script);
       });
     }
